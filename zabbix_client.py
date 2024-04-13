@@ -14,7 +14,7 @@ from selenium.webdriver.chrome.service import Service
 class ZabbixClient:
     def __init__(self, api_url, user, password, telegram_client, max_login_retries, login_retry_delay, cleanup_interval, use_trigger_filters, 
                  main_loop_sleep_duration, trigger_filters, script_start_time, retention_period, min_severity, login_retry_interval, login_url, 
-                 graph_manager, send_graphs, executable_path, binary_location,logger=None):
+                 graph_manager, send_graphs, executable_path, binary_location, use_duration_threshold , duration_threshold ,logger=None):
         self.api_url = api_url
         self.user = user
         self.password = password
@@ -37,6 +37,8 @@ class ZabbixClient:
         self.send_graphs = send_graphs
         self.executable_path = executable_path
         self.binary_location = binary_location
+        self.use_duration_threshold = use_duration_threshold
+        self.duration_threshold = duration_threshold
 
            
         
@@ -205,7 +207,7 @@ class ZabbixClient:
                 if self.use_trigger_filters:
                     for trigger_filter in self.trigger_filters:
                         self.logger.info("////////////////////////////////////////////////////////////")
-                        problem_triggers = await self.fetch_triggers(session, "1", trigger_filter)
+                        problem_triggers = await self.fetch_triggers(session, "1", trigger_filter, use_duration_threshold=self.use_duration_threshold, duration_threshold=self.duration_threshold)
                         for trigger in problem_triggers:
                             await self.alarm_manager.process_problem_trigger(session, trigger, current_time)
 
@@ -215,7 +217,7 @@ class ZabbixClient:
                 else:
                     #Fetch all triggers without filter but severity
                     self.logger.info("////////////////////////////////////////////////////////////")
-                    problem_triggers = await self.fetch_triggers(session, "1", min_severity=self.min_severity)
+                    problem_triggers = await self.fetch_triggers(session, "1", min_severity=self.min_severity, use_duration_threshold=self.use_duration_threshold, duration_threshold=self.duration_threshold)
                     for trigger in problem_triggers:
                         await self.alarm_manager.process_problem_trigger(session, trigger, current_time)
 
@@ -239,7 +241,7 @@ class ZabbixClient:
             await asyncio.sleep(self.main_loop_sleep_duration)
 
 
-    async def fetch_triggers(self, session, trigger_state, trigger_filter=None, min_severity=None):
+    async def fetch_triggers(self, session, trigger_state, trigger_filter=None, min_severity=None, use_duration_threshold=None, duration_threshold=None):
         fetching_type = "PROBLEM" if trigger_state == "1" else "RESOLVED"
         headers = {"Content-Type": "application/json-rpc"}
         
@@ -257,6 +259,10 @@ class ZabbixClient:
             "active": True,
             "filter": {"value": trigger_state}
         }
+
+        if use_duration_threshold:
+            threshold = int(time.time()) - (duration_threshold * 60) 
+            params["lastChangeTill"] = threshold  
 
         # Apply trigger_filter or min_severity
         if trigger_filter is not None:
@@ -289,8 +295,11 @@ class ZabbixClient:
                     
                 if trigger_filter is not None:                   
                     self.logger.info(f"Found {trigger_count} {fetching_type} triggers from Zabbix with {trigger_filter} filter.")
-                else:               
-                    self.logger.info(f"Found {trigger_count} {fetching_type} triggers from Zabbix with min severity {min_severity}.")
+                else:
+                    if use_duration_threshold:               
+                        self.logger.info(f"Found {trigger_count} {fetching_type} triggers from Zabbix with min severity {min_severity} and min duration threshold {duration_threshold} minutes.")
+                    else:
+                        self.logger.info(f"Found {trigger_count} {fetching_type} triggers from Zabbix with min severity {min_severity}.")
                 return response_data.get("result", [])
                  
 

@@ -1,5 +1,3 @@
-TZ-MANAGER created with the assistance of GPT and GitHub Copilot.
-
 Configuration Guide for config.ini
 This README provides detailed information on configuring the config.ini file for TZ-MANAGER. Each setting in the config.ini file is crucial for the application's functionality.
 
@@ -90,6 +88,16 @@ SEND_OLD_RESOLVED
 Description: Flag to send/not send old resolved notifications.
 Format: Boolean (True/False) 
 Required: Optional (default: False)
+
+USE_DURATION_THRESHOLD
+Description: Flag to use/not use min trigger duration.
+Format: Boolean (True/False) 
+Required: Optional (default: True)
+
+USE_DURATION_THRESHOLD
+Description: Min trigger duration by minutes.
+Format: Integer 
+Required: Optional (default: 1)
 
 [GraphSettings]
 SEND_GRAPHS

@@ -52,7 +52,9 @@ class MonitoringApplication:
             graph_manager=self.graph_manager,
             send_graphs=graph_settings.get('SEND_GRAPHS', 'True').lower() == 'true',
             executable_path=graph_settings['EXECUTABLE_PATH'],
-            binary_location=graph_settings['BINARY_LOCATION'], 
+            binary_location=graph_settings['BINARY_LOCATION'],
+            use_duration_threshold=settings.get('USE_DURATION_THRESHOLD', 'True').lower() == 'true',
+            duration_threshold=int(settings['DURATION_THRESHOLD']),
             logger=self.logger
         )
 
